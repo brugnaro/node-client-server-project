@@ -1,157 +1,173 @@
 class User {
 
-    constructor(name, gender, birth, country, email, password, photo, admin){
+	constructor(name, gender, birth, country, email, password, photo, admin) {
 
-        this._id;
-        this._name = name;
-        this._gender = gender;
-        this._birth = birth;
-        this._country = country;
-        this._email = email;
-        this._password = password;
-        this._photo = photo;
-        this._admin = admin;
-        this._register = new Date();
+		this._id;
+		this._name = name;
+		this._gender = gender;
+		this._birth = birth;
+		this._country = country;
+		this._email = email;
+		this._password = password;
+		this._photo = photo;
+		this._admin = admin;
+		this._register = new Date();
 
-    }
+	}
 
-    get id(){
-        return this._id;
-    }
+	get id() {
+		return this._id;
+	}
 
-    get register(){
-        return this._register;
-    }
+	get register() {
+		return this._register;
+	}
 
-    get name(){
-        return this._name;
-    }
+	get name() {
+		return this._name;
+	}
 
-    get gender() {
-        return this._gender;
-    }
+	get gender() {
+		return this._gender;
+	}
 
-    get birth() {
-        return this._birth;
-    }
+	get birth() {
+		return this._birth;
+	}
 
-    get country() {
-        return this._country;
-    }
+	get country() {
+		return this._country;
+	}
 
-    get email() {
-        return this._email;
-    }
+	get email() {
+		return this._email;
+	}
 
-    get photo() {
-        return this._photo;
-    }
+	get photo() {
+		return this._photo;
+	}
 
-    get password() {
-        return this._password;
-    }
+	get password() {
+		return this._password;
+	}
 
-    get admin() {
-        return this._admin;
-    }
+	get admin() {
+		return this._admin;
+	}
 
-    set photo(value){
-        this._photo = value;
-    }
+	set photo(value) {
+		this._photo = value;
+	}
 
-    loadFromJSON(json){
+	loadFromJSON(json) {
 
-        for (let name in json){
-            
-            switch(name){
+		for (let name in json) {
 
-                case '_register':
-                    this[name] = new Date(json[name]);
-                break;
-                default:
-                    this[name] = json[name];
+			switch (name) {
 
-            }
-            
+				case '_register':
+					this[name] = new Date(json[name]);
+					break;
+				default:
+					if (name.substring(0, 1) === '_') this[name] = json[name];
 
-        }
+			}
 
-    }
 
-    static getUsersStorage() {
+		}
 
-        let users = [];
+	}
 
-        if (localStorage.getItem("users")) {
+	static getUsersStorage() {
 
-            users = JSON.parse(localStorage.getItem("users"));
+		let users = [];
 
-        }
+		if (localStorage.getItem("users")) {
 
-        return users;
+			users = JSON.parse(localStorage.getItem("users"));
 
-    }
+		}
 
-    getNewID(){
+		return users;
 
-        let usersID = parseInt(localStorage.getItem("usersID"));
+	}
 
-        if (!usersID > 0) usersID = 0;
+	getNewID() {
 
-        usersID++;
+		let usersID = parseInt(localStorage.getItem("usersID"));
 
-        localStorage.setItem("usersID", usersID);
+		if (!usersID > 0) usersID = 0;
 
-        return usersID;
+		usersID++;
 
-    }
+		localStorage.setItem("usersID", usersID);
 
-    save(){
+		return usersID;
 
-        let users = User.getUsersStorage();
+	}
 
-        if (this.id > 0) {
-            
-            users.map(u=>{
+	toJSON() {
 
-                if (u._id == this.id) {
+		let json = {};
 
-                    Object.assign(u, this);
+		Object.keys(this).forEach(key => {
 
-                }
+			if (this[key] !== undefined) json[key] = this[key];
 
-                return u;
+		});
 
-            });
+		return json;
 
-        } else {
+	}
 
-            this._id = this.getNewID();
+	save() {
 
-            users.push(this);
+		return new Promise((resolve, reject) => {
 
-        }
+			let promise;
 
-        localStorage.setItem("users", JSON.stringify(users));
+			if (this.id) {
 
-    }
+				promise = HttpRequest.put(`/users/${this.id}`, this.toJSON());
 
-    remove(){
+			} else {
 
-        let users = User.getUsersStorage();
+				promise = HttpRequest.post(`/users`, this.toJSON());
 
-        users.forEach((userData, index)=>{
+			}
 
-            if (this._id == userData._id) {
+			promise.then(data => {
 
-                users.splice(index, 1);
+				this.loadFromJSON(data);
 
-            }
+				resolve(this);
 
-        });
+			}).catch(e => {
 
-        localStorage.setItem("users", JSON.stringify(users));
+				reject(e);
 
-    }
+			});
+
+		});
+
+	}
+
+	remove() {
+
+		let users = User.getUsersStorage();
+
+		users.forEach((userData, index) => {
+
+			if (this._id == userData._id) {
+
+				users.splice(index, 1);
+
+			}
+
+		});
+
+		localStorage.setItem("users", JSON.stringify(users));
+
+	}
 
 }
